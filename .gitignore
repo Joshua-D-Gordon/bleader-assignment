@@ -1,0 +1,18 @@
+# Environment variables (secrets)
+.env
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+
+# stray / local-only (not part of the deliverable)
+AI_Engineer_Challenge.docx
+/FDS_PriceBook_Automation_V0.pdf
+/FDS_PriceBook_Automation_V5.docx
+plan.md
+rnd.md
+run.sh

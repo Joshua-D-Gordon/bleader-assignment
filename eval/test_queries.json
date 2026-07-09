@@ -1,0 +1,83 @@
+{
+  "description": "Retrieval hit-rate harness. Each expectation checks that querying Pinecone (filtered to the given doc) surfaces a chunk containing any of the expected substrings within top_k. Facts verified against the source documents.",
+  "top_k": 6,
+  "queries": [
+    {
+      "id": "currencies",
+      "question": "How many currencies does the price book pipeline support?",
+      "expectations": [
+        {"doc_id": "A", "any": ["3 currencies"]},
+        {"doc_id": "B", "any": ["5 currencies"]}
+      ]
+    },
+    {
+      "id": "cpn_lines_changed",
+      "question": "How many CPN lines changed this quarter and what percentage is that?",
+      "expectations": [
+        {"doc_id": "A", "any": ["100 lines", "2.6%"]},
+        {"doc_id": "B", "any": ["260", "6%"]}
+      ]
+    },
+    {
+      "id": "na_uplift",
+      "question": "What are the North America regional uplift percentages by category?",
+      "expectations": [
+        {"doc_id": "A", "any": ["25%", "M9K", "TAA"]},
+        {"doc_id": "B", "any": ["25%", "M9K", "TAA"]}
+      ]
+    },
+    {
+      "id": "qa_rules",
+      "question": "How many QA validation rules are run before release?",
+      "expectations": [
+        {"doc_id": "A", "any": ["15 manual validation", "15 validation"]},
+        {"doc_id": "B", "any": ["15 validation", "15 pre-release", "15 rules"]}
+      ]
+    },
+    {
+      "id": "acm_matching_rule",
+      "question": "How are CAPEX CPNs mapped to ACM items?",
+      "expectations": [
+        {"doc_id": "A", "any": ["2% MSRP", "deviation"]},
+        {"doc_id": "B", "any": ["2% MSRP", "deviation"]}
+      ]
+    },
+    {
+      "id": "acm_engine_schema",
+      "question": "What is the input/output schema of the ACM Generation Engine?",
+      "expectations": [
+        {"doc_id": "B", "any": ["ACM Generation Engine", "pandas 2.0", "Input/Output", "Schema"]}
+      ]
+    },
+    {
+      "id": "distributor_special_values",
+      "question": "How are No Charge and Quotation prices handled in the distributor price book?",
+      "expectations": [
+        {"doc_id": "A", "any": ["No Charge", "Quotation"]}
+      ]
+    },
+    {
+      "id": "anomaly_detection",
+      "question": "Does the system detect pricing anomalies, and how?",
+      "expectations": [
+        {"doc_id": "A", "any": ["anomaly", "anomalies"]},
+        {"doc_id": "B", "any": ["anomaly", "anomalies", "drift"]}
+      ]
+    },
+    {
+      "id": "cycle_time",
+      "question": "How long does the quarterly cycle take today?",
+      "expectations": [
+        {"doc_id": "A", "any": ["10 business days", "10 business"]},
+        {"doc_id": "B", "any": ["30-business-day", "30 business", "30-business"]}
+      ]
+    },
+    {
+      "id": "web_interface",
+      "question": "Is there a web interface for product managers to enter data?",
+      "expectations": [
+        {"doc_id": "B", "any": ["web interface", "web-based", "PM input"]}
+      ]
+    }
+  ]
+}

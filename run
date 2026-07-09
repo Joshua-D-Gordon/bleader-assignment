@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+#
+# Single entry point for the whole project. Run from the repo root.
+#
+#   ./run help                      show this help
+#   ./run chat A [question...]      ask Doc A  (older);  omit question = interactive
+#   ./run chat B [question...]      ask Doc B  (newer)
+#   ./run chat cross [question...]  comparative question across BOTH documents
+#   ./run compare [-o out.json]     MATCH / DIFF / MISSING comparison JSON
+#   ./run summary                   Top-10 most important changes, ranked
+#   ./run serve                     start the FastAPI server (Swagger at /docs)
+#   ./run docker                    build + run everything in Docker
+#
+# No venv activation or module paths needed — this script handles that.
+set -euo pipefail
+cd "$(dirname "$0")"
+
+PY="backend/venv/bin/python"
+[ -x "$PY" ] || PY="python"
+UVICORN="backend/venv/bin/uvicorn"
+[ -x "$UVICORN" ] || UVICORN="uvicorn"
+
+# Print the comment header (all leading '#' lines after the shebang), stripped.
+usage() { awk 'NR>1 && /^#/ {sub(/^# ?/,""); print; next} NR>1 {exit}' "$0"; }
+
+cmd="${1:-help}"
+case "$cmd" in
+  help|-h|--help|"")
+    usage
+    ;;
+  serve)
+    shift
+    exec "$UVICORN" backend.app.main:app --host 0.0.0.0 --port "${PORT:-8000}" "$@"
+    ;;
+  docker)
+    IMAGE="fds-reconciler"; PORT="${PORT:-8000}"
+    if ! docker info >/dev/null 2>&1; then
+      echo "ERROR: Docker daemon is not running." >&2; exit 1
+    fi
+    [ -f .env ] || { echo "ERROR: .env not found (cp .env.example .env)"; exit 1; }
+    echo "==> Building '$IMAGE' ..."; docker build -t "$IMAGE" .
+    echo "==> http://localhost:${PORT}  (Swagger at /docs, Ctrl+C to stop)"
+    exec docker run --rm --env-file .env -p "${PORT}:8000" "$IMAGE"
+    ;;
+  chat|compare|summary)
+    exec "$PY" -m backend.cli "$@"
+    ;;
+  *)
+    echo "unknown command '$cmd'" >&2
+    usage
+    exit 1
+    ;;
+esac

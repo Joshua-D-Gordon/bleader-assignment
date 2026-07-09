@@ -1,0 +1,11 @@
+.env
+.git
+**/venv
+**/__pycache__
+**/*.pyc
+*.docx
+*.pdf
+!samples/*.pdf
+!samples/*.docx
+plan.md
+rnd.md
