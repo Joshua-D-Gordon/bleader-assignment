@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BLeader · Semantic Document Reconciliation</title>
+<style>
+  :root {
+    --navy: #1B1450;       /* deep indigo — headings / body */
+    --blue: #2F6BED;
+    --purple: #6A2CC9;
+    --magenta: #D3269B;
+    --pink: #E84BC9;
+    --sky: #56CCF2;
+    --white: #FFFFFF;
+    --gray-bg: #F6F5FB;
+    --gray-text: #5A5570;
+    --border: #E7E5F2;
+    --diff: #DD8500;
+    --match: #1F9D6B;
+    --missing: #2F6BED;
+    /* BLeader signature blue -> purple -> magenta */
+    --grad: linear-gradient(105deg, #1b2a9e 0%, #5326be 40%, #a51f9c 76%, #e0409f 100%);
+    --grad-btn: linear-gradient(135deg, #2F6BED 0%, #7A2BD4 52%, #D3269B 100%);
+    --shadow: 0 1px 3px rgba(27,20,80,.08), 0 8px 24px rgba(27,20,80,.07);
+    --radius: 14px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: var(--font); color: var(--navy);
+    background: var(--gray-bg); line-height: 1.55; -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--blue); }
+
+  /* ---------- Header ---------- */
+  header {
+    background: var(--grad); color: #fff; padding: 28px 24px 34px;
+    position: relative; overflow: hidden;
+  }
+  /* "data flying up" light-rays rising from the bottom */
+  header::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(90deg, transparent 0 10px, rgba(160,215,255,.08) 10px 11px, transparent 11px 26px);
+    -webkit-mask: linear-gradient(to top, #000, transparent 78%);
+    mask: linear-gradient(to top, #000, transparent 78%);
+  }
+  .header-inner { max-width: 1080px; margin: 0 auto; position: relative; z-index: 1; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand svg { width: 34px; height: 34px; }
+  .brand .word { font-size: 26px; font-weight: 700; letter-spacing: -.5px; color: #fff; }
+  .brand .word b { color: #fff; font-weight: 700; }
+  .tagline { margin-top: 3px; font-size: 11px; font-style: italic; letter-spacing: .16em;
+    text-transform: uppercase; color: #E7C9FF; }
+  .tagline b { color: var(--pink); font-style: normal; font-weight: 700; }
+  .subtitle { margin-top: 12px; font-size: 15px; color: #DCCFF4; max-width: 640px; }
+  .subtitle strong { color: #fff; font-weight: 600; }
+
+  /* ---------- Tabs ---------- */
+  .tabs { max-width: 1080px; margin: -18px auto 0; padding: 0 24px; display: flex; gap: 8px; }
+  .tab {
+    background: #fff; border: 1px solid var(--border); border-bottom: none;
+    padding: 12px 22px; border-radius: 12px 12px 0 0; cursor: pointer;
+    font-weight: 600; font-size: 14px; color: var(--gray-text);
+    box-shadow: var(--shadow); transition: .15s;
+  }
+  .tab.active { color: var(--navy); border-top: 3px solid var(--magenta); padding-top: 10px; }
+  .tab:hover:not(.active) { color: var(--navy); }
+
+  /* ---------- Layout ---------- */
+  main { max-width: 1080px; margin: 0 auto; padding: 24px; }
+  .panel {
+    background: #fff; border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 24px; display: none;
+  }
+  .panel.active { display: block; animation: fade .25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  h2.section-title { margin: 0 0 4px; font-size: 19px; }
+  p.section-hint { margin: 0 0 18px; color: var(--gray-text); font-size: 14px; }
+
+  /* ---------- Segmented control ---------- */
+  .segmented { display: inline-flex; background: var(--gray-bg); border-radius: 10px; padding: 4px; gap: 4px; margin-bottom: 14px; }
+  .seg { border: none; background: transparent; padding: 8px 16px; border-radius: 8px; cursor: pointer;
+    font-weight: 600; font-size: 13px; color: var(--gray-text); transition: .15s; }
+  .seg.active { background: #fff; color: var(--navy); box-shadow: 0 1px 2px rgba(11,31,59,.15); }
+
+  /* ---------- Inputs / buttons ---------- */
+  textarea, input[type=text] {
+    width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 13px 14px;
+    font-family: var(--font); font-size: 14px; color: var(--navy); resize: vertical; min-height: 52px;
+  }
+  textarea:focus, input:focus { outline: none; border-color: var(--purple); box-shadow: 0 0 0 3px rgba(106,44,201,.15); }
+  .row { display: flex; gap: 10px; align-items: flex-start; margin-top: 12px; }
+  button.primary {
+    background: var(--grad-btn); color: #fff; border: none; border-radius: 10px; padding: 13px 22px;
+    font-weight: 600; font-size: 14px; cursor: pointer; white-space: nowrap; transition: .15s;
+    box-shadow: 0 4px 14px rgba(150,40,160,.28);
+  }
+  button.primary:hover { filter: brightness(1.08); }
+  button.primary:disabled { opacity: .55; cursor: default; filter: none; }
+
+  /* ---------- Answer / cards ---------- */
+  .answer { margin-top: 22px; }
+  .answer-body { background: var(--gray-bg); border-radius: 12px; padding: 18px; font-size: 15px; white-space: pre-wrap; }
+  .label { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--gray-text); font-weight: 700; margin: 20px 0 8px; }
+  .badge { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 7px;
+    border-radius: 6px; font-size: 12px; font-weight: 700; color: #fff; }
+  .badge.A { background: var(--purple); }
+  .badge.B { background: var(--magenta); }
+  .cite { display: flex; gap: 10px; align-items: baseline; padding: 9px 12px; background: #fff; border: 1px solid var(--border);
+    border-radius: 9px; margin-bottom: 7px; font-size: 13px; }
+  .cite .src { color: var(--navy); font-weight: 600; }
+  .cite .meta { color: var(--gray-text); font-size: 12px; margin-left: auto; }
+
+  .trace { display: flex; flex-wrap: wrap; gap: 8px; }
+  .step { background: #F4ECFF; border: 1px solid #E6D6FF; color: var(--navy); border-radius: 20px;
+    padding: 5px 12px; font-size: 12px; font-weight: 500; }
+  .step b { color: var(--purple); }
+
+  /* ---------- Compare ---------- */
+  .cmp-legend { display: flex; gap: 14px; margin-bottom: 16px; flex-wrap: wrap; }
+  .pill { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; }
+  .dot { width: 11px; height: 11px; border-radius: 50%; }
+  .card { border: 1px solid var(--border); border-radius: 12px; padding: 15px 16px; margin-bottom: 12px; background: #fff; }
+  .card.diff { border-left: 4px solid var(--diff); }
+  .card.match { border-left: 4px solid var(--match); }
+  .card.missing { border-left: 4px solid var(--missing); }
+  .card .reason { color: var(--gray-text); font-size: 14px; margin: 4px 0 12px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .col h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--gray-text); }
+  .col .text { font-size: 13px; background: var(--gray-bg); border-radius: 8px; padding: 10px; max-height: 150px; overflow: auto; white-space: pre-wrap; }
+  .src-line { font-size: 12px; color: var(--gray-text); margin-top: 8px; }
+  .counts { display: flex; gap: 10px; margin-bottom: 18px; }
+  .count-box { flex: 1; text-align: center; border-radius: 12px; padding: 14px; color: #fff; }
+  .count-box .n { font-size: 28px; font-weight: 700; line-height: 1; }
+  .count-box .l { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; opacity: .9; margin-top: 5px; }
+
+  /* ---------- Summary ---------- */
+  .change { display: flex; gap: 14px; border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+  .rank { flex: 0 0 34px; height: 34px; border-radius: 9px; background: var(--grad-btn); color: #fff; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; font-size: 15px; }
+  .change .title { font-weight: 600; font-size: 15px; }
+  .imp { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 2px 8px; border-radius: 20px; margin-left: 8px; }
+  .imp.high { background: #FDE7E7; color: #C0392B; }
+  .imp.medium { background: #FEF3E0; color: #B9770E; }
+  .imp.low { background: #EAF1FB; color: var(--blue); }
+  .change .why { color: var(--gray-text); font-size: 14px; margin-top: 4px; }
+  .change .why-cites { font-size: 12px; color: #94A3B8; margin-top: 6px; }
+
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff;
+    border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -3px; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .muted { color: var(--gray-text); font-size: 14px; }
+  .err { color: #C0392B; font-size: 14px; background: #FDE7E7; padding: 10px 12px; border-radius: 8px; }
+  @media (max-width: 680px) { .cols { grid-template-columns: 1fr; } .counts { flex-direction: column; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs><linearGradient id="planeGrad" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#56CCF2"/><stop offset="0.5" stop-color="#2F6BED"/><stop offset="1" stop-color="#E84BC9"/>
+        </linearGradient></defs>
+        <path d="M22 2L11 13" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M22 2L15 22L11 13L2 9L22 2Z" fill="url(#planeGrad)" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/>
+      </svg>
+      <div>
+        <span class="word">B<b>Leader</b></span>
+        <div class="tagline">make your data <b>FLY</b></div>
+      </div>
+    </div>
+    <div class="subtitle"><strong>Semantic Document Reconciliation.</strong> Compare two versions of a Functional Design Spec, query each document, and ask cross-version questions — every answer grounded and cited.</div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <div class="tab active" data-tab="chat">Chat</div>
+  <div class="tab" data-tab="compare">Compare</div>
+  <div class="tab" data-tab="summary">Executive Summary</div>
+</nav>
+
+<main>
+  <!-- CHAT -->
+  <section class="panel active" id="panel-chat">
+    <h2 class="section-title">Ask the documents</h2>
+    <p class="section-hint">Answers use only retrieved context, with citations and the agent's retrieval trace.</p>
+    <div class="segmented" id="doc-seg">
+      <button class="seg active" data-target="A">Doc A · V0 (older)</button>
+      <button class="seg" data-target="B">Doc B · V5 (newer)</button>
+      <button class="seg" data-target="cross">Cross-document</button>
+    </div>
+    <div class="row">
+      <textarea id="chat-q" placeholder="e.g. What changed in the number of currencies between versions?"></textarea>
+      <button class="primary" id="chat-send">Ask</button>
+    </div>
+    <div class="answer" id="chat-out"></div>
+  </section>
+
+  <!-- COMPARE -->
+  <section class="panel" id="panel-compare">
+    <h2 class="section-title">Document comparison</h2>
+    <p class="section-hint">MATCH / DIFF / MISSING across the two versions, each with a source citation and an LLM explanation.</p>
+    <button class="primary" id="cmp-run">Run comparison</button>
+    <span class="muted" id="cmp-note" style="margin-left:12px"></span>
+    <div id="cmp-out" style="margin-top:20px"></div>
+  </section>
+
+  <!-- SUMMARY -->
+  <section class="panel" id="panel-summary">
+    <h2 class="section-title">Top 10 changes</h2>
+    <p class="section-hint">The most important changes between versions, ranked by semantic importance — not document order.</p>
+    <button class="primary" id="sum-run">Generate summary</button>
+    <div id="sum-out" style="margin-top:20px"></div>
+  </section>
+</main>
+
+<script>
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const esc = s => (s ?? "").replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+// ---- tabs ----
+$$(".tab").forEach(t => t.onclick = () => {
+  $$(".tab").forEach(x => x.classList.remove("active"));
+  $$(".panel").forEach(x => x.classList.remove("active"));
+  t.classList.add("active");
+  $("#panel-" + t.dataset.tab).classList.add("active");
+});
+
+// ---- chat ----
+let target = "A";
+$$("#doc-seg .seg").forEach(b => b.onclick = () => {
+  $$("#doc-seg .seg").forEach(x => x.classList.remove("active"));
+  b.classList.add("active"); target = b.dataset.target;
+});
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (!r.ok) throw new Error((await r.json().catch(()=>({}))).detail || ("HTTP " + r.status));
+  return r.json();
+}
+
+function renderChat(d) {
+  const cites = d.citations.map(c =>
+    `<div class="cite"><span class="badge ${c.doc_id}">${c.doc_id}</span>
+       <span class="src">${esc(c.source)}</span>
+       <span class="meta">${esc(c.section_path||"")} · ${c.score}</span></div>`).join("");
+  const trace = d.retrievals.map((r,i) =>
+    `<span class="step">round ${i+1} · <b>${r.doc_id}</b> · top ${r.top_score} · <i>${esc(r.query)}</i></span>`).join("");
+  return `<div class="answer-body">${esc(d.answer)}</div>
+    <div class="label">Citations</div>${cites || '<span class="muted">none</span>'}
+    <div class="label">Agent retrieval trace (${d.retrievals.length} rounds)</div>
+    <div class="trace">${trace}</div>`;
+}
+
+$("#chat-send").onclick = async () => {
+  const q = $("#chat-q").value.trim();
+  const out = $("#chat-out"), btn = $("#chat-send");
+  if (!q) return;
+  btn.disabled = true; out.innerHTML = `<p class="muted"><span class="spinner" style="border-top-color:#2F80ED;border-color:#cfe0fb;border-top-color:#2F80ED"></span>Retrieving and reasoning…</p>`;
+  try {
+    const d = target === "cross"
+      ? await api("/chat/cross", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({question:q})})
+      : await api("/chat", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({doc_id:target, question:q})});
+    out.innerHTML = renderChat(d);
+  } catch(e) { out.innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+  btn.disabled = false;
+};
+$("#chat-q").addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#chat-send").click(); }
+});
+
+// ---- compare ----
+let cmpCache = null;
+function renderCompare(d) {
+  const counts = `<div class="counts">
+    <div class="count-box" style="background:var(--match)"><div class="n">${d.match.length}</div><div class="l">Match</div></div>
+    <div class="count-box" style="background:var(--diff)"><div class="n">${d.diff.length}</div><div class="l">Diff</div></div>
+    <div class="count-box" style="background:var(--missing)"><div class="n">${d.missing.length}</div><div class="l">Missing</div></div></div>`;
+  const diffs = d.diff.map(x => `<div class="card diff">
+      <div class="reason">${esc(x.reason)}</div>
+      <div class="cols">
+        <div class="col"><h4>Doc A</h4><div class="text">${esc(x.docA_text)}</div><div class="src-line">${esc(x.sourceA)}</div></div>
+        <div class="col"><h4>Doc B</h4><div class="text">${esc(x.docB_text)}</div><div class="src-line">${esc(x.sourceB)}</div></div>
+      </div></div>`).join("");
+  const missing = d.missing.map(x => `<div class="card missing">
+      <div class="text" style="background:var(--gray-bg);border-radius:8px;padding:10px">${esc(x.text)}</div>
+      <div class="src-line">Only in ${esc(x.source_file)} · ${esc(x.location)}</div></div>`).join("");
+  const match = d.match.map(x => `<div class="card match">
+      <div class="src-line" style="margin-top:0">${esc(x.source)}</div>
+      <div class="cols" style="margin-top:8px">
+        <div class="col"><h4>Doc A</h4><div class="text">${esc(x.textA)}</div></div>
+        <div class="col"><h4>Doc B</h4><div class="text">${esc(x.textB)}</div></div></div></div>`).join("");
+  return counts +
+    `<div class="label">Diff — changed meaningfully</div>${diffs||'<span class="muted">none</span>'}
+     <div class="label">Missing — present in only one version</div>${missing||'<span class="muted">none</span>'}
+     <div class="label">Match — semantically equivalent</div>${match||'<span class="muted">none</span>'}`;
+}
+$("#cmp-run").onclick = async () => {
+  const out = $("#cmp-out"), btn = $("#cmp-run"), note = $("#cmp-note");
+  if (cmpCache) { out.innerHTML = renderCompare(cmpCache); return; }
+  btn.disabled = true; note.textContent = "This runs many LLM calls — ~30–60s…";
+  out.innerHTML = `<p class="muted"><span class="spinner" style="border-color:#cfe0fb;border-top-color:#2F80ED"></span>Aligning and classifying sections…</p>`;
+  try { cmpCache = await api("/compare", {method:"POST"}); out.innerHTML = renderCompare(cmpCache); }
+  catch(e) { out.innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+  btn.disabled = false; note.textContent = "";
+};
+
+// ---- summary ----
+$("#sum-run").onclick = async () => {
+  const out = $("#sum-out"), btn = $("#sum-run");
+  btn.disabled = true;
+  out.innerHTML = `<p class="muted"><span class="spinner" style="border-color:#cfe0fb;border-top-color:#2F80ED"></span>Ranking the most important changes…</p>`;
+  try {
+    const d = await api("/summary");
+    out.innerHTML = d.changes.map(c => `<div class="change">
+        <div class="rank">${c.rank}</div>
+        <div><div class="title">${esc(c.title)}<span class="imp ${c.importance}">${c.importance}</span></div>
+          <div class="why">${esc(c.why_it_matters)}</div>
+          <div class="why-cites">${(c.citations||[]).map(esc).join(" · ")}</div></div></div>`).join("");
+  } catch(e) { out.innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+  btn.disabled = false;
+};
+</script>
+</body>
+</html>

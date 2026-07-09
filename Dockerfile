@@ -6,8 +6,9 @@ WORKDIR /app
 COPY backend/requirements.txt backend/requirements.txt
 RUN pip install --no-cache-dir -r backend/requirements.txt
 
-# App code, sample documents, and eval harness.
+# App code, web UI, sample documents, and eval harness.
 COPY backend/ backend/
+COPY frontend/ frontend/
 COPY samples/ samples/
 COPY eval/ eval/
 

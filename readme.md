@@ -58,9 +58,12 @@ python -m backend.run_ingestion  # one-time: parse -> chunk -> embed -> upsert (
 ./run compare -o comparison.json                     # MATCH/DIFF/MISSING JSON
 ./run summary                                        # Top-10 changes by importance
 
-./run serve                      # start the FastAPI server (Swagger at /docs)
+./run serve                      # start the server, then open http://localhost:8000/
 python -m eval.run_eval          # (optional) retrieval hit-rate check
 ```
+
+Open **http://localhost:8000/** for the web UI (Chat / Compare / Executive Summary),
+or **/docs** for the Swagger API.
 
 ### Docker
 
@@ -68,9 +71,9 @@ python -m eval.run_eval          # (optional) retrieval hit-rate check
 ./run docker        # builds the image and runs the API on http://localhost:8000
 ```
 
-Then open <http://localhost:8000/docs>. Vectors live in Pinecone (cloud), so if you
-already ran `./run ingest` you don't need to re-ingest; otherwise
-`curl -X POST http://localhost:8000/ingest` once.
+Then open <http://localhost:8000/> for the web UI (or `/docs` for Swagger). Vectors
+live in Pinecone (cloud), so if you already ingested you don't need to re-ingest;
+otherwise `curl -X POST http://localhost:8000/ingest` once.
 
 ---
 
@@ -97,9 +100,11 @@ backend/
   cli.py                # argparse CLI behind ./run (chat/compare/summary)
   run_ingestion.py      # one-time ingestion CLI (wraps ingestion_service)
 run                     # single entry point: ./run {help,chat,compare,summary,serve,docker}
+frontend/index.html     # self-contained web UI (served at / by FastAPI)
 eval/                   # retrieval hit-rate harness
 samples/                # both FDS documents
 Dockerfile
+DECISIONS.md            # decisions, trade-offs, bugs we hit, what I'd improve
 ```
 
 ## Architecture
